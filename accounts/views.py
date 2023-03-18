@@ -9,8 +9,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 
 class RegisterView(generics.CreateAPIView):
-    """
-    A class-based view for handling user registration.
+    """View for handling user registration.
 
     This view handles user registration and is designed to be called by a client-side application. The view
     accepts a request with the necessary data to create a new user, serializes the data using the 
@@ -21,8 +20,7 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
 class LoginView(APIView):
-    """
-    A class-based view for handling user authentication.
+    """View for handling user authentication.
 
     This view is responsible for authenticating a user using the provided username and password. If the provided
     credentials are valid, the view returns a response with the user's authentication token. If the credentials are
@@ -51,17 +49,15 @@ class ProfileView(APIView):
           return abort(404)
 
 class SettingsView(APIView):
-    """
-    A class-based view for handling the settings of a user.
-
+    """View for handling the settings of a user
+    
     The view supports the following actions:
     - retrieve the current settings of a user (GET request)
     - update the settings of a user (POST request)
     """
 
     def get(self, request):
-        """
-        Retrieve the current settings of a user.
+        """Retrieve the current settings of a user.
 
         Parameters:
         - request (django.http.request.HttpRequest): the HTTP request object
@@ -77,8 +73,7 @@ class SettingsView(APIView):
         return response(serializer.data)
 
     def patch(self, request):
-        """
-        Update the settings of a user.
+        """Update the settings of a user.
 
         Parameters:
         - request (django.http.request.HttpRequest): the HTTP request object

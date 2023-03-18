@@ -46,14 +46,16 @@ class User(AbstractUser):
     first_name = None
     last_name = None
     username = None
+    full_name = models.CharField(max_length=50)
     email = models.EmailField(('email address'), unique=True)
     mobile = models.CharField(max_length=20, null=True)
     bio = models.TextField(max_length=500, null=True)
+    location = models.CharField(max_length=50, null=True)
+    avatar = models.ImageField(upload_to=get_image_filename, default='default.png')
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
-    full_name = models.CharField(max_length=250, null=True)
-    avatar = models.ImageField(upload_to=get_image_filename, default = 'default.png')
-    location = models.CharField(max_length=50, null=True)
+    
     objects = UserManager()
 
     def __str__(self):
