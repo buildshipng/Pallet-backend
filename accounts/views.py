@@ -1,43 +1,73 @@
-from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.views import APIView
 from .serializers import *
-from django.http import HttpResponse, JsonResponse
 from .utils import response, abort
-from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
-from django.contrib.auth import authenticate
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from rest_framework import serializers, status
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework.permissions import AllowAny
+from django.conf import settings
+
+
+User = get_user_model()
+
 
 class RegisterView(generics.CreateAPIView):
     """View for handling user registration.
 
-    This view handles user registration and is designed to be called by a client-side application. The view
-    accepts a request with the necessary data to create a new user, serializes the data using the 
-    `RegisterSerializer` class, and returns a response with the serialized data of the newly created user.
+    This view handles user registration and  returns a response with the serialized data of the newly created user.
     """
     authentication_classes = ()
     permission_classes = ()
     serializer_class = RegisterSerializer
 
-class LoginView(APIView):
+class LoginView(TokenObtainPairView):
     """View for handling user authentication.
 
-    This view is responsible for authenticating a user using the provided username and password. If the provided
+    This view is responsible for authenticating a user using the provided email and password. If the provided
     credentials are valid, the view returns a response with the user's authentication token. If the credentials are
     invalid, the view returns a 400 Bad Request response with an error message indicating that the provided
     credentials are incorrect.
     """
+    serializer_class = LoginSerializer
+
+class PasswordResetRequestView(APIView):
+    authentication_classes = ()
     permission_classes = ()
     
     def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
-        user = authenticate(email=email, password=password)
-        if user:
-            return response({"token": user.auth_token.key, "message": "success"})
-        else:
-            return abort(404, "Invalid Credentials")
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'An account with this email does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        token = RefreshToken.for_user(user).access_token
+        send_password_reset_email(email, token)
+        return Response({'success': 'An email with a reset link has been sent to your address.'}, status=status.HTTP_200_OK)
 
+class PasswordResetConfirmView(APIView):
+    authentication_classes = ()
+    permission_classes = ()
+    
+    def post(self, request):
+        token = request.data.get('token')
+        password = request.data.get('password')
+        try:
+            user_id = AccessToken(token).payload['user_id']
+            user = User.objects.get(id=user_id)
+        except (User.DoesNotExist, KeyError):
+            return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(password)
+        user.save()
+        return Response({'success': 'Password reset successful.'}, status=status.HTTP_200_OK)
 
 class ProfileView(APIView):
     def get(self, request, user_id):
