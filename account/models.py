@@ -52,6 +52,8 @@ class User(AbstractUser):
     bio = models.TextField(max_length=500, null=True)
     location = models.CharField(max_length=50, null=True)
     avatar = models.ImageField(upload_to=get_image_filename, default='default.png')
+    fav_gigs = models.ManyToManyField('Gigs', related_name="fav_gig", blank=True)
+    fav_service = models.ManyToManyField('self', related_name="fav_sp", blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -60,3 +62,22 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.full_name
+
+class Gigs(models.Model):
+    service_provider = models.ForeignKey(User, on_delete=models.CASCADE)
+    gig_name = models.CharField(max_length=100)
+    gig_description = models.CharField(max_length=1000, null=True)
+    gig_price = models.CharField(max_length=20, null=True)
+    gig_negotiable = models.BooleanField("Negotiable", default=False)
+    gig_location = models.CharField(max_length=20, null=True)
+    gig_service_type = models.CharField(max_length=20, null=True)
+    gig_image = models.ImageField(upload_to=get_image_filename, default='default.png')
+
+    def __str__(self):
+        return self.gig_name
+
+class Portfolio(models.Model):
+    service_provider = models.ForeignKey(User, on_delete=models.CASCADE)
+    service_title = models.CharField(max_length=100)
+    service_overview = models.CharField(max_length=1000, null=True)
+    service_image = models.ImageField(upload_to=get_image_filename, default='default.png')
