@@ -7,7 +7,7 @@ import random
 import time
 
 class TokenGenerator:
-  def __init__(self, token_validity_period=100):
+  def __init__(self, token_validity_period=300):
     self.generated_tokens = {}
     self.token_validity_period = token_validity_period
 

@@ -161,3 +161,13 @@ REST_FRAMEWORK = {
    ),
     
 }
+
+
+# Email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.mailgun.org'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = 'postmaster@sandbox21a22bad73ff497fb2d74bdfd5f8491e.mailgun.org'
+EMAIL_HOST_PASSWORD = 'JAHCHUKSDANpalette'
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'buildshipng@gmail.com'

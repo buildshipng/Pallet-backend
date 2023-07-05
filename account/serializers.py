@@ -17,17 +17,22 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
 class LoginSerializer(TokenObtainPairSerializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True)
+    default_error_messages = {
+        'no_active_account': 'Your account is not active.',
+        'invalid_credentials':'Invalid email or password.',
+    }
 
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        user = User.objects.get(email=data['email'])
-        refresh = self.get_token(user)
+    # def validate(self, attrs):
+    #     data = super().validate(attrs)
+    #     user = self.user
+    #     refresh = self.get_token(user)
 
-        data['refresh'] = str(refresh)
-        data['access'] = str(refresh.access_token)
+    #     data['refresh'] = str(refresh)
+    #     data['access'] = str(refresh.access_token)
 
-        return data
+    #     return data
 
 class RegisterSerializer(serializers.ModelSerializer):
     # verification_token = serializers.CharField(write_only=True)
@@ -35,7 +40,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ['full_name', 'email', 'password', 'mobile']
         extra_kwargs = {'password': {'write_only': True}}
+        required_feilds = ['mobile']
 
+    mobile = serializers.CharField(required=True)
+    
     def create(self, validated_data):
         user = User(
           email=validated_data['email'],
@@ -43,7 +51,7 @@ class RegisterSerializer(serializers.ModelSerializer):
           mobile=validated_data['mobile']
           )
         user.set_password(validated_data['password'])
-        user.is_active = 0
+        user.is_active = False  
         
     
         user.save()
@@ -55,8 +63,12 @@ class SettingsSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['full_name', 'email', 'avatar', 'mobile', 'bio', 'location']
+        # fields = '__all__'
         extra_kwargs = {'email': {'read_only': True}}
+        exclude = ['password', 'date_joined', 'user_permissions']
+
+# class BusinessSerializer(serializers.ModelSerializer):
+
 
 
 class VerificationSerializer(serializers.Serializer):
