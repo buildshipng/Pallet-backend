@@ -66,7 +66,7 @@ class User(AbstractUser):
         return self.full_name
 
 class Gigs(models.Model):
-    service_provider = models.ForeignKey(User, on_delete=models.CASCADE)
+    service_provider = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gigs')
     gig_name = models.CharField(max_length=100)
     gig_description = models.CharField(max_length=1000, null=True)
     gig_price = models.CharField(max_length=20, null=True)
@@ -79,10 +79,11 @@ class Gigs(models.Model):
         return self.gig_name
 
 class Portfolio(models.Model):
-    service_provider = models.ForeignKey(User, on_delete=models.CASCADE)
+    service_provider = models.ForeignKey(User, on_delete=models.CASCADE, related_name='portfolio')
     service_title = models.CharField(max_length=100)
     service_overview = models.CharField(max_length=1000, null=True)
     service_image = models.ImageField(upload_to=get_image_filename, default='default.png')
+    created_at = models.DateTimeField(auto_now=True)
 
 class Business(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
@@ -106,3 +107,9 @@ class Tokens(models.Model):
         # Hash the token before saving in the DB
         self.token = make_password(self.token)
         super().save(*args, **kwargs)
+
+class Reviews(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviewer')
+    date_created = models.DateField(auto_now=True)
+    rev_details = models.CharField(max_length=600, null=True, blank=True)

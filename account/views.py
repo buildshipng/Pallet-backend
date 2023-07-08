@@ -16,7 +16,7 @@ from django.utils.encoding import force_bytes
 from rest_framework import serializers, status
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.hashers import check_password
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken, OutstandingToken
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from django.conf import settings
@@ -53,6 +53,7 @@ class RegisterView(generics.CreateAPIView):
         new_token.save()
 
         print(token)
+<<<<<<< HEAD
         # send_mail(
         #     "Test",
         #     "This is a test message with token: " + token,
@@ -60,6 +61,15 @@ class RegisterView(generics.CreateAPIView):
         #     ["fikayodan@gmail.com"],
         #     fail_silently=False,
         # )
+=======
+        send_mail(
+            "Test",
+            "This is a test message with token: \n" + token,
+            "buildshipng@gmail.com",
+            ["fikayodan@gmail.com"],
+            fail_silently=False,
+        )
+>>>>>>> 55e2751228477e3d24cd119ad9574b1e17de55b4
         # Customize the response data
         response_data = {
             'message': 'User registered successfully',
@@ -131,6 +141,14 @@ class PasswordResetRequestView(APIView):
         new_token.token = token
         new_token.exp_date = time.time() + 300
         new_token.save()
+
+        send_mail(
+            "Test",
+            "This is a test message with token: \n" + token,
+            "buildshipng@gmail.com",
+            ["fikayodan@gmail.com"],
+            fail_silently=False,
+        )
         return Response({'Token': token, 'message': "success"}, status=status.HTTP_200_OK)
         # token = RefreshToken.for_user(user).access_token
         # send_password_reset_email(email, token)
@@ -192,6 +210,7 @@ class ProfileView(APIView):
         except User.DoesNotExist:
           return abort(404)
 
+# This view is actually the profile view
 class SettingsView(APIView):
     """View for handling the settings of a user
 
@@ -269,4 +288,63 @@ class VerificationView(APIView):
         except User.DoesNotExist:
             return Response({'detail': 'Invalid verification token'}, status=status.HTTP_400_BAD_REQUEST)
 
+
+class GigView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+
+    def post(self, request):
+        print(request.user.id)
+        request.data['service_provider'] = request.user.id
+        serializer = GigSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        # print(serializer.data)
+        print(serializer.validated_data)
+        serializer.save()
+
+        return response(serializer.data)
+class PortfolioView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+
+    def post(self, request):
+        print(request.user.id)
+        request.data['service_provider'] = request.user.id
+        serializer = PortfolioSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        # print(serializer.data)
+        print(serializer.validated_data)
+        serializer.save()
+
+        return response(serializer.data)
+
+class BusinessView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+
+    def post(self, request):
+        print(request.user.id)
+        request.data['service_provider'] = request.user.id
+        serializer = BusinessSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        # print(serializer.data)
+        print(serializer.validated_data)
+        serializer.save()
+
+        return response(serializer.data)
+
+
+class LogoutView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            refresh_token = request.data["refresh_token"]
+           
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            return Response({"details":"Successfully logged out."},status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
 

@@ -13,4 +13,9 @@ urlpatterns = [
     path('reset/confirm/', views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('settings/', views.SettingsView.as_view()),
     path('<int:user_id>/', views.ProfileView.as_view()),
+    path('gigs/', views.GigView.as_view(), name='gigs'),
+    path('portfolio/', views.PortfolioView.as_view(), name='portfolio'),
+    path('business/', views.BusinessView.as_view(), name='business'),
+    path('logout/', views.LogoutView.as_view(), name='logout'),
+    
 ]
