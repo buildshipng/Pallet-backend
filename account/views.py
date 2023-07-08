@@ -60,7 +60,6 @@ class RegisterView(generics.CreateAPIView):
             ["fikayodan@gmail.com"],
             fail_silently=False,
         )
-
         # Customize the response data
         response_data = {
             'message': 'User registered successfully',
