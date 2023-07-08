@@ -28,6 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 # SECRET_KEY = config('SECRET_KEY')
 SECRET_KEY = os.getenv("SECRET_KEY")
+<<<<<<< HEAD
+
+=======
+>>>>>>> 55e2751228477e3d24cd119ad9574b1e17de55b4
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -165,7 +169,7 @@ REST_FRAMEWORK = {
    'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAdminUser'
    ),
-    
+
 }
 
 
