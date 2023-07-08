@@ -53,15 +53,6 @@ class RegisterView(generics.CreateAPIView):
         new_token.save()
 
         print(token)
-<<<<<<< HEAD
-        # send_mail(
-        #     "Test",
-        #     "This is a test message with token: " + token,
-        #     "buildshipng@gmail.com",
-        #     ["fikayodan@gmail.com"],
-        #     fail_silently=False,
-        # )
-=======
         send_mail(
             "Test",
             "This is a test message with token: \n" + token,
@@ -69,7 +60,7 @@ class RegisterView(generics.CreateAPIView):
             ["fikayodan@gmail.com"],
             fail_silently=False,
         )
->>>>>>> 55e2751228477e3d24cd119ad9574b1e17de55b4
+
         # Customize the response data
         response_data = {
             'message': 'User registered successfully',
