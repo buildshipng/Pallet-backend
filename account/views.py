@@ -34,7 +34,7 @@ class RegisterView(generics.CreateAPIView):
     """View for handling user registration.
     This view handles user registration and  returns a response with the serialized data of the newly created user.
     """
-    
+
     authentication_classes = ()
     permission_classes = ()
     serializer_class = RegisterSerializer
@@ -51,15 +51,15 @@ class RegisterView(generics.CreateAPIView):
         new_token.token = token
         new_token.exp_date = time.time() + 300
         new_token.save()
-        
+
         print(token)
-        send_mail(
-            "Test",
-            "This is a test message with token: " + token,
-            "buildshipng@gmail.com",
-            ["fikayodan@gmail.com"],
-            fail_silently=False,
-        )
+        # send_mail(
+        #     "Test",
+        #     "This is a test message with token: " + token,
+        #     "buildshipng@gmail.com",
+        #     ["fikayodan@gmail.com"],
+        #     fail_silently=False,
+        # )
         # Customize the response data
         response_data = {
             'message': 'User registered successfully',
@@ -70,7 +70,7 @@ class RegisterView(generics.CreateAPIView):
         }
 
         return Response(response_data, status=status.HTTP_201_CREATED)
-    
+
 
 class LoginView(TokenObtainPairView):
     """View for handling user authentication.
@@ -80,11 +80,11 @@ class LoginView(TokenObtainPairView):
     credentials are incorrect.
     """
     serializer_class = LoginSerializer
-    
+
     def post(self, request, *args, **kwargs):
-        
+
         try:
-            
+
             serializer = self.get_serializer(data=request.data)
             # serializer.is_valid(raise_exception=True)
 
@@ -105,7 +105,7 @@ class LoginView(TokenObtainPairView):
             except User.DoesNotExist:
                 raise AuthenticationFailed('Invalid email or password.')
 
-            
+
             return super().post(request, *args, **kwargs)
         except AuthenticationFailed as e:
             print(e)
@@ -115,14 +115,14 @@ class LoginView(TokenObtainPairView):
 class PasswordResetRequestView(APIView):
     authentication_classes = ()
     permission_classes = ()
-    
+
     def post(self, request):
         email = request.data.get('email')
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response({'error': 'An account with this email does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         token = str(random.randint(1000, 9999))
         # OTP token
         new_token = Tokens()
@@ -139,7 +139,7 @@ class PasswordResetRequestView(APIView):
 class PasswordResetConfirmView(APIView):
     authentication_classes = ()
     permission_classes = ()
-    
+
     # def post(self, request):
     #     token = request.data.get('token')
     #     password = request.data.get('password')
@@ -148,7 +148,7 @@ class PasswordResetConfirmView(APIView):
     #         user = User.objects.get(id=user_id)
     #     except (User.DoesNotExist, KeyError):
     #         return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
     #     user.set_password(password)
     #     user.save()
     #     return Response({'success': 'Password reset successful.'}, status=status.HTTP_200_OK)
@@ -181,7 +181,7 @@ class PasswordResetConfirmView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'Invalid  token'}, status=status.HTTP_400_BAD_REQUEST)
 
-        
+
 
 class ProfileView(APIView):
     def get(self, request, user_id):
@@ -194,7 +194,7 @@ class ProfileView(APIView):
 
 class SettingsView(APIView):
     """View for handling the settings of a user
-    
+
     The view supports the following actions:
     - retrieve the current settings of a user (GET request)
     - update the settings of a user (POST request)
@@ -268,5 +268,5 @@ class VerificationView(APIView):
 
         except User.DoesNotExist:
             return Response({'detail': 'Invalid verification token'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
 
