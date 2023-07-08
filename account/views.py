@@ -57,7 +57,7 @@ class RegisterView(generics.CreateAPIView):
             "Test",
             "This is a test message with token: \n" + token,
             "buildshipng@gmail.com",
-            ["fikayodan@gmail.com"],
+            [user.email],
             fail_silently=False,
         )
         # Customize the response data
