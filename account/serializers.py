@@ -77,11 +77,14 @@ class SettingsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = '__all__'
-        extra_kwargs = {
-            'email': {'read_only': True},
-            'password': {'write_only': True}
-        }
+        #fields = '__all__'
+        exclude = ['password']
+        read_only_fields = ['email', 'full_name']
+
+        # extra_kwargs = {
+        #     'email': {'read_only': True},
+        #     'password': {'write_only': True}
+        # }
 
 
 

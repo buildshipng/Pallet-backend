@@ -24,6 +24,7 @@ from .models import Tokens
 import time
 from django.db.models import Q
 from django.core.mail import send_mail
+from .utils import BaseResponse
 
 
 User = get_user_model()
@@ -39,36 +40,42 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = ()
     serializer_class = RegisterSerializer
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        exception = None
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
 
-        token = str(random.randint(1000, 9999))
-        # OTP token
-        new_token = Tokens()
-        new_token.email = user.email
-        new_token.action = 'register'
-        new_token.token = token
-        new_token.exp_date = time.time() + 300
-        new_token.save()
+            token = str(random.randint(1000, 9999))
+            # OTP token
+            new_token = Tokens()
+            new_token.email = user.email
+            new_token.action = 'register'
+            new_token.token = token
+            new_token.exp_date = time.time() + 300
+            new_token.save()
 
-        print(token)
-        send_mail(
-            "Test",
-            "This is a test message with token: \n" + token,
-            "buildshipng@gmail.com",
-            [user.email],
-            fail_silently=False,
-        )
-        # Customize the response data
-        response_data = {
-            'message': 'User registered successfully',
-            'full_name': user.full_name,
-            'email': user.email,
-            'token': token
-            # Add any other fields you want to include in the response
-        }
+            print(token)
+            # send_mail(
+            #     "Test",
+            #     "This is a test message with token: \n" + token,
+            #     "buildshipng@gmail.com",
+            #     [user.email],
+            #     fail_silently=False,
+            # )
+            # Customize the response data
+            response_data = {
+                'full_name': user.full_name,
+                'email': user.email,
+                'token': token
+                # Add any other fields you want to include in the response
+            }
+            base_response = BaseResponse(data=response_data, exception=exception, message="User Created Successful")
+            return Response(base_response.to_dict())
+        except Exception as e:
+            return abort(400, "User registration failed")
 
+            
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
@@ -106,10 +113,12 @@ class LoginView(TokenObtainPairView):
                 raise AuthenticationFailed('Invalid email or password.')
 
 
-            return super().post(request, *args, **kwargs)
+            response =  super().post(request, *args, **kwargs)
+            response.data = BaseResponse(response.data, None, 'Login successful').to_dict()
+            return Response(response.data)
         except AuthenticationFailed as e:
-            print(e)
-            return Response({'error': e.detail}, status=status.HTTP_401_UNAUTHORIZED)
+            return abort(401, (e.detail)['detail'])
+            # return Response({'error': e.detail}, status=status.HTTP_401_UNAUTHORIZED)
         # return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 class PasswordResetRequestView(APIView):
@@ -120,26 +129,34 @@ class PasswordResetRequestView(APIView):
         email = request.data.get('email')
         try:
             user = User.objects.get(email=email)
+        
+
+
+            token = str(random.randint(1000, 9999))
+            # OTP token
+            new_token = Tokens()
+            new_token.email = email
+            new_token.action = 'resetpassword'
+            new_token.token = token
+            new_token.exp_date = time.time() + 300
+            new_token.save()
+
+            # send_mail(
+            #     "Test",
+            #     "This is a test message with token: \n" + token,
+            #     "buildshipng@gmail.com",
+            #     [email],
+            #     fail_silently=False,
+            # )
+            data = {
+                'Token': token
+            }
+            base_response = BaseResponse(data, None, 'Reset OTP send to email')
+            return Response(base_response.to_dict())
+            return Response({'Token': token, 'message': "success"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
-            return Response({'error': 'An account with this email does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-        token = str(random.randint(1000, 9999))
-        # OTP token
-        new_token = Tokens()
-        new_token.email = email
-        new_token.action = 'resetpassword'
-        new_token.token = token
-        new_token.exp_date = time.time() + 300
-        new_token.save()
-
-        send_mail(
-            "Test",
-            "This is a test message with token: \n" + token,
-            "buildshipng@gmail.com",
-            ["fikayodan@gmail.com"],
-            fail_silently=False,
-        )
-        return Response({'Token': token, 'message': "success"}, status=status.HTTP_200_OK)
+            # return Response({'error': 'An account with this email does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+            return abort(404, 'An account with this email does not exist.')
         # token = RefreshToken.for_user(user).access_token
         # send_password_reset_email(email, token)
         # return Response({'success': 'An email with a reset link has been sent to your address.'}, status=status.HTTP_200_OK)
@@ -180,14 +197,18 @@ class PasswordResetConfirmView(APIView):
                 user.save()
                 token.save()
 
+                base_response = BaseResponse(None, None, 'Password reset successful.')
+                return Response(base_response.to_dict())
                 return Response({'success': 'Password reset successful.'}, status=status.HTTP_200_OK)
             elif result and token.exp_date < time.time():
-                return Response({'message': 'Token expired'})
+                return abort(401, 'Invalid  token')
+
             else:
                 raise User.DoesNotExist
 
         except User.DoesNotExist:
-            return Response({'error': 'Invalid  token'}, status=status.HTTP_400_BAD_REQUEST)
+            return abort(401, 'Invalid  token')
+
 
 
 
@@ -219,10 +240,15 @@ class SettingsView(APIView):
         Raises:
         - None
         """
-        user = request.user
-        print(user)
-        serializer = SettingsSerializer(user)
-        return response(serializer.data)
+        exception = None
+        try:
+            user = request.user
+            print(user)
+            serializer = SettingsSerializer(user)
+        except Exception as e:
+            exception = e
+        base_response = BaseResponse(data=serializer.data, exception=exception, message="User Data fetch Successful")
+        return Response(base_response.to_dict())
 
     def patch(self, request):
         """Update the details of a user.
@@ -233,11 +259,20 @@ class SettingsView(APIView):
         Raises:
         - django.http.response.HttpResponseBadRequest: if the request data is not valid
         """
+        exception = None
         user = request.user
         serializer = SettingsSerializer(user, data=request.data)
-        if serializer.is_valid():
+        try:
+            serializer.is_valid()
             serializer.save()
-            return response(serializer.data)
+            # return response(serializer.data)
+            base_response = BaseResponse(data=serializer.data, exception=exception, message="User Data Udated Successfully")
+            return Response(base_response.to_dict())
+        except Exception as e:
+            exception = e
+            print(exception)
+        
+
         return abort(400, serializer.errors)
 
 class VerificationView(APIView):
@@ -253,7 +288,9 @@ class VerificationView(APIView):
         try:
             user = User.objects.get(email=email)
             #verify the token that was passed
-            token = Tokens.objects.get(email=email)
+            # token = Tokens.objects.get(email=email)
+            token = Tokens.objects.filter(Q(email=email) & Q(action='register')).order_by('-created_at')[:1].first()
+
             result = check_password(verification_token, token.token)
             if result == True and token.exp_date >= time.time():
                 token.date_used = datetime.now()
@@ -268,15 +305,17 @@ class VerificationView(APIView):
                     "location": user.location,
                     # "avatar": user.avatar,
                 }
-
-                return Response({'message': 'User successfully verified', "user_data" : user_data}, status=status.HTTP_200_OK)
+                base_response = BaseResponse(user_data, None, 'User successfully verified')
+                return Response(base_response.to_dict())
+                
             elif result and token.exp_date < time.time():
-                return Response({'message': 'Token expired'})
+                return abort(401, 'Token has expired')
             else:
                 raise User.DoesNotExist
 
         except User.DoesNotExist:
-            return Response({'detail': 'Invalid verification token'}, status=status.HTTP_400_BAD_REQUEST)
+            return abort(401, 'Invalid verification token')
+
 
 
 class GigView(APIView):
@@ -287,10 +326,16 @@ class GigView(APIView):
         print(request.user.id)
         request.data['service_provider'] = request.user.id
         serializer = GigSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        # print(serializer.data)
-        print(serializer.validated_data)
-        serializer.save()
+        try:
+            serializer.is_valid(raise_exception=True)
+            # print(serializer.data)
+            print(serializer.validated_data)
+            serializer.save()
+            base_response = BaseResponse(serializer.data, None, 'Gig created successfully')
+            return Response(base_response.to_dict())
+        except:
+
+            return abort(400, serializer.errors)
 
         return response(serializer.data)
 class PortfolioView(APIView):
@@ -301,12 +346,16 @@ class PortfolioView(APIView):
         print(request.user.id)
         request.data['service_provider'] = request.user.id
         serializer = PortfolioSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        # print(serializer.data)
-        print(serializer.validated_data)
-        serializer.save()
+        try:
+            serializer.is_valid(raise_exception=True)
+            # print(serializer.data)
+            print(serializer.validated_data)
+            serializer.save()
+            base_response = BaseResponse(serializer.data, None, 'Portfolio created successfully')
+            return Response(base_response.to_dict())
+        except:
 
-        return response(serializer.data)
+            return abort(400, serializer.errors)
 
 class BusinessView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -316,12 +365,16 @@ class BusinessView(APIView):
         print(request.user.id)
         request.data['service_provider'] = request.user.id
         serializer = BusinessSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        # print(serializer.data)
-        print(serializer.validated_data)
-        serializer.save()
+        try:
+            serializer.is_valid(raise_exception=True)
+            # print(serializer.data)
+            print(serializer.validated_data)
+            serializer.save()
+            base_response = BaseResponse(serializer.data, None, 'Business created successfully')
+            return Response(base_response.to_dict())
+        except:
 
-        return response(serializer.data)
+            return abort(400, serializer.errors)
 
 
 class LogoutView(APIView):
@@ -333,8 +386,46 @@ class LogoutView(APIView):
            
             token = RefreshToken(refresh_token)
             token.blacklist()
-
-            return Response({"details":"Successfully logged out."},status=status.HTTP_205_RESET_CONTENT)
+            base_response = BaseResponse(None, None, 'Successfully logged out.')
+            return Response(base_response.to_dict(), 205)
         except Exception as e:
-            return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
+            print(type(str(e)))
+            return abort(400, str(e))
 
+
+class RegisterRefreshView(APIView):
+    authentication_classes = ()
+    permission_classes = ()
+
+    def post(self, request):
+        try:
+            email = request.data.get('email')
+
+            token = str(random.randint(1000, 9999))
+            # OTP token
+            new_token = Tokens()
+            new_token.email = email
+            new_token.action = 'register'
+            new_token.token = token
+            new_token.exp_date = time.time() + 300
+            new_token.save()
+
+            # send_mail(
+            #     "Test",
+            #     "This is a test message with token: \n" + token,
+            #     "buildshipng@gmail.com",
+            #     [email],
+            #     fail_silently=False,
+            # )
+            data = {
+                'token': new_token,
+                'email': email
+            }
+            base_response = BaseResponse(data, None, 'Register OTP send to email')
+            return Response(base_response.to_dict())
+        except:
+            return abort(400, 'An error occured. Please Try again')
+
+        # token = RefreshToken.for_user(user).access_token
+        # send_password_reset_email(email, token)
+        # return Response({'success': 'An email with a reset link has been sent to your address.'}, status=status.HTTP_200_OK)

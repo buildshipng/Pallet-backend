@@ -43,8 +43,8 @@ def abort(code, message=None):
   message = message or messages.get(code, '')
   data = {
     'success': False,
-    'error': code,
-    'message': message
+    'message': message,
+    'data': None
   }
   return JsonResponse(data, json_dumps_params={'indent': 2}, status=code)
 
@@ -134,3 +134,21 @@ class TOTPVerification:
             # was less than last verified counter, then return False
             self.verified = False
     return self.verified
+
+class BaseResponse(object):
+    
+  data = None
+  success = False
+  message = None
+
+  def __init__(self, data, exception, message):
+    self.data = data
+    self.message = str(exception) if exception is not None else message
+    self.success = exception is None
+
+  def to_dict(self):
+    return {
+        'success': self.success,
+        'message': self.message,
+        'data': self.data,
+    }
