@@ -418,7 +418,7 @@ class RegisterRefreshView(APIView):
             #     fail_silently=False,
             # )
             data = {
-                'token': new_token,
+                'token': token,
                 'email': email
             }
             base_response = BaseResponse(data, None, 'Register OTP send to email')
