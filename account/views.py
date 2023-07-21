@@ -297,15 +297,16 @@ class VerificationView(APIView):
                 user.is_active = True
                 user.save()
                 token.save()
-                user_data = {
-                    "full name": user.full_name,
-                    "email": user.email,
-                    "mobile": user.mobile,
-                    "bio": user.bio,
-                    "location": user.location,
-                    # "avatar": user.avatar,
-                }
-                base_response = BaseResponse(user_data, None, 'User successfully verified')
+
+                exception = None
+                try:
+                    
+                    print(user)
+                    userserializer = SettingsSerializer(user)
+                except Exception as e:
+                    exception = e
+                
+                base_response = BaseResponse(data=userserializer.data, exception=exception, message='User successfully verified')
                 return Response(base_response.to_dict())
                 
             elif result and token.exp_date < time.time():
