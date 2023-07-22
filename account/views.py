@@ -112,9 +112,13 @@ class LoginView(TokenObtainPairView):
             except User.DoesNotExist:
                 raise AuthenticationFailed('Invalid email or password.')
 
-
+            serializer = SettingsSerializer(user)
             response =  super().post(request, *args, **kwargs)
-            response.data = BaseResponse(response.data, None, 'Login successful').to_dict()
+            responseData = {
+                "Authorization": response.data,
+                "user_data": serializer.data
+            }
+            response.data = BaseResponse(responseData, None, 'Login successful').to_dict()
             return Response(response.data)
         except AuthenticationFailed as e:
             return abort(401, (e.detail)['detail'])
