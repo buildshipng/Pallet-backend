@@ -4,8 +4,10 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
-from  .models import Gigs, User, Portfolio, Reviews, Business
+from  .models import User
 import random
+from gigs.serializers import GigSerializer
+from portfolio.serializers import BusinessSerializer, PortfolioSerializer
  
 
 
@@ -50,41 +52,35 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-class GigSerializer(serializers.ModelSerializer):
-    service_provider = serializers.PrimaryKeyRelatedField(default=serializers.CurrentUserDefault(), queryset=User.objects.all())
-    class Meta:
-        model = Gigs
-        fields = ['gig_name', 'gig_description', 'gig_price', 'gig_negotiable', 'gig_location', 'gig_service_type', 'gig_image', 'service_provider']
-
-class PortfolioSerializer(serializers.ModelSerializer):
-    service_provider = serializers.PrimaryKeyRelatedField(default=serializers.CurrentUserDefault(), queryset=User.objects.all())
-
-    class Meta:
-        model = Portfolio
-        fields = '__all__'
-
-class BusinessSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(default=serializers.CurrentUserDefault(), queryset=User.objects.all())
-
-    class Meta:
-        model = Business
-        fields = '__all__'
 
 class SettingsSerializer(serializers.ModelSerializer):
     gigs = GigSerializer(many=True, read_only=True)
     portfolio = PortfolioSerializer(many=True, read_only=True)
     business = BusinessSerializer(read_only = True)
+    avatar_url = serializers.ReadOnlyField()
 
     class Meta:
         model = User
         #fields = '__all__'
-        exclude = ['password']
+        exclude = [
+            'password',
+            'is_active',
+            'is_superuser',
+            'groups',
+            'user_permissions',
+            'is_staff']
         read_only_fields = ['email', 'full_name']
 
         # extra_kwargs = {
         #     'email': {'read_only': True},
         #     'password': {'write_only': True}
         # }
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop("avatar")
+
+        return representation
 
 
 
@@ -95,4 +91,6 @@ class VerificationSerializer(serializers.Serializer):
 class PassVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
     verification_token = serializers.CharField()
+class PassResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     password = serializers.CharField()

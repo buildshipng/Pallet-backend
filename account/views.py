@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.views import APIView
 from .serializers import *
-from .utils import response, abort, TokenGenerator
+from .utils import response, abort, TokenGenerator, BaseResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -24,7 +24,8 @@ from .models import Tokens
 import time
 from django.db.models import Q
 from django.core.mail import send_mail
-from .utils import BaseResponse
+from rest_framework.parsers import MultiPartParser
+
 
 
 User = get_user_model()
@@ -126,6 +127,9 @@ class LoginView(TokenObtainPairView):
         # return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 class PasswordResetRequestView(APIView):
+    """
+    View to request for an otp to reset password
+    """
     authentication_classes = ()
     permission_classes = ()
 
@@ -135,7 +139,7 @@ class PasswordResetRequestView(APIView):
             user = User.objects.get(email=email)
         
 
-
+            
             token = str(random.randint(1000, 9999))
             # OTP token
             new_token = Tokens()
@@ -145,13 +149,7 @@ class PasswordResetRequestView(APIView):
             new_token.exp_date = time.time() + 300
             new_token.save()
 
-            # send_mail(
-            #     "Test",
-            #     "This is a test message with token: \n" + token,
-            #     "buildshipng@gmail.com",
-            #     [email],
-            #     fail_silently=False,
-            # )
+            
             data = {
                 'Token': token
             }
@@ -166,28 +164,20 @@ class PasswordResetRequestView(APIView):
         # return Response({'success': 'An email with a reset link has been sent to your address.'}, status=status.HTTP_200_OK)
 
 class PasswordResetConfirmView(APIView):
+    """
+    This view is used to verify a reset password token
+    """
     authentication_classes = ()
     permission_classes = ()
 
-    # def post(self, request):
-    #     token = request.data.get('token')
-    #     password = request.data.get('password')
-    #     try:
-    #         user_id = AccessToken(token).payload['user_id']
-    #         user = User.objects.get(id=user_id)
-    #     except (User.DoesNotExist, KeyError):
-    #         return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     user.set_password(password)
-    #     user.save()
-    #     return Response({'success': 'Password reset successful.'}, status=status.HTTP_200_OK)
+    
     def post(self, request):
         serializer = PassVerificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
         verification_token = serializer.validated_data['verification_token']
-        password = serializer.validated_data['password']
+        
 
         try:
             user = User.objects.get(email=email)
@@ -197,15 +187,15 @@ class PasswordResetConfirmView(APIView):
             result = check_password(verification_token, token.token)
             if result == True and token.exp_date >= time.time():
                 token.date_used = datetime.now()
-                user.set_password(password)
+                token.confirmed = True
                 user.save()
                 token.save()
 
-                base_response = BaseResponse(None, None, 'Password reset successful.')
+                base_response = BaseResponse(None, None, 'Token verified successfully.')
                 return Response(base_response.to_dict())
                 return Response({'success': 'Password reset successful.'}, status=status.HTTP_200_OK)
             elif result and token.exp_date < time.time():
-                return abort(401, 'Invalid  token')
+                return abort(401, 'Expired  token')
 
             else:
                 raise User.DoesNotExist
@@ -214,16 +204,51 @@ class PasswordResetConfirmView(APIView):
             return abort(401, 'Invalid  token')
 
 
+class PasswordResetView(APIView):
+    """
+    This view is used to reset a password
+    """
+    authentication_classes = ()
+    permission_classes = ()
 
+    def post(self, request):
+        serializer = PassResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
+
+        try:
+            user = User.objects.get(email=email)
+            #verify the token that was passed
+            token = Tokens.objects.filter(Q(email=email) & Q(action='resetpassword')).order_by('-created_at')[:1].first()
+            print(token)
+            
+            if token.confirmed:
+                user.set_password(password)
+                user.save()
+                base_response = BaseResponse(None, None, 'Password reset successful.')
+                return Response(base_response.to_dict(), status=status.HTTP_200_OK)
+                return Response({'success': 'Password reset successful.'}, status=status.HTTP_200_OK)
+            else:
+                raise User.DoesNotExist
+
+        except User.DoesNotExist:
+            return abort(401, 'Invalid  token')
 
 class ProfileView(APIView):
+    """
+    View to get the details of a user 
+    """
+    permission_classes = (IsAuthenticated,)
+
     def get(self, request, user_id):
         try:
           obj = User.objects.get(id=user_id)
           serializer = UserSerializer(obj)
-          return response(serializer.data)
+          responseData = BaseResponse(serializer.data, None, 'User Profile').to_dict()
+          return response(responseData)
         except User.DoesNotExist:
-          return abort(404)
+          return abort(404, 'User Does not exist')
 
 # This view is actually the profile view
 class SettingsView(APIView):
@@ -234,6 +259,7 @@ class SettingsView(APIView):
     - update the settings of a user (POST request)
     """
     permission_classes = (IsAuthenticated,)
+    parser_classes = [MultiPartParser]
 
     def get(self, request):
         """Retrieve the current details of a user.
@@ -263,14 +289,20 @@ class SettingsView(APIView):
         Raises:
         - django.http.response.HttpResponseBadRequest: if the request data is not valid
         """
+        
         exception = None
         user = request.user
         serializer = SettingsSerializer(user, data=request.data)
         try:
-            serializer.is_valid()
+            #avatar_file = request.FILES.get('avatar')
+            #if avatar_file:
+                # Save the avatar file to the user's avatar field
+                # request.user.avatar = avatar_file
+                # request.user.save()
+            serializer.is_valid(raise_exception=True)
             serializer.save()
             # return response(serializer.data)
-            base_response = BaseResponse(data=serializer.data, exception=exception, message="User Data Udated Successfully")
+            base_response = BaseResponse(data=serializer.data, exception=exception, message="User Data Updated Successfully")
             return Response(base_response.to_dict())
         except Exception as e:
             exception = e
@@ -280,6 +312,11 @@ class SettingsView(APIView):
         return abort(400, serializer.errors)
 
 class VerificationView(APIView):
+    """
+    This view verifies cteating account with otp
+
+    POST - takes the otp and the email to verify
+    """
     permission_classes = ()
 
     def post(self, request):
@@ -322,67 +359,10 @@ class VerificationView(APIView):
             return abort(401, 'Invalid verification token')
 
 
-
-class GigView(APIView):
-    permission_classes = (IsAuthenticated,)
-    
-
-    def post(self, request):
-        print(request.user.id)
-        request.data['service_provider'] = request.user.id
-        serializer = GigSerializer(data=request.data, context={'request': request})
-        try:
-            serializer.is_valid(raise_exception=True)
-            # print(serializer.data)
-            print(serializer.validated_data)
-            serializer.save()
-            base_response = BaseResponse(serializer.data, None, 'Gig created successfully')
-            return Response(base_response.to_dict())
-        except:
-
-            return abort(400, serializer.errors)
-
-        return response(serializer.data)
-class PortfolioView(APIView):
-    permission_classes = (IsAuthenticated,)
-    
-
-    def post(self, request):
-        print(request.user.id)
-        request.data['service_provider'] = request.user.id
-        serializer = PortfolioSerializer(data=request.data, context={'request': request})
-        try:
-            serializer.is_valid(raise_exception=True)
-            # print(serializer.data)
-            print(serializer.validated_data)
-            serializer.save()
-            base_response = BaseResponse(serializer.data, None, 'Portfolio created successfully')
-            return Response(base_response.to_dict())
-        except:
-
-            return abort(400, serializer.errors)
-
-class BusinessView(APIView):
-    permission_classes = (IsAuthenticated,)
-    
-
-    def post(self, request):
-        print(request.user.id)
-        request.data['service_provider'] = request.user.id
-        serializer = BusinessSerializer(data=request.data, context={'request': request})
-        try:
-            serializer.is_valid(raise_exception=True)
-            # print(serializer.data)
-            print(serializer.validated_data)
-            serializer.save()
-            base_response = BaseResponse(serializer.data, None, 'Business created successfully')
-            return Response(base_response.to_dict())
-        except:
-
-            return abort(400, serializer.errors)
-
-
 class LogoutView(APIView):
+    """
+    View to logout a user
+    """
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
@@ -399,6 +379,9 @@ class LogoutView(APIView):
 
 
 class RegisterRefreshView(APIView):
+    """
+    This view generates a new otp for signing up
+    """
     authentication_classes = ()
     permission_classes = ()
 
