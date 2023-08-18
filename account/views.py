@@ -120,7 +120,7 @@ class LoginView(TokenObtainPairView):
                 "user_data": serializer.data
             }
             response.data = BaseResponse(responseData, None, 'Login successful').to_dict()
-            return Response(response.data)
+            return Response(response.data, status=status.HTTP_200_OK)
         except AuthenticationFailed as e:
             return abort(401, (e.detail)['detail'])
             # return Response({'error': e.detail}, status=status.HTTP_401_UNAUTHORIZED)
@@ -154,7 +154,7 @@ class PasswordResetRequestView(APIView):
                 'Token': token
             }
             base_response = BaseResponse(data, None, 'Reset OTP send to email')
-            return Response(base_response.to_dict())
+            return Response(base_response.to_dict(), status=status.HTTP_201_CREATED)
             return Response({'Token': token, 'message': "success"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             # return Response({'error': 'An account with this email does not exist.'}, status=status.HTTP_404_NOT_FOUND)
@@ -192,7 +192,7 @@ class PasswordResetConfirmView(APIView):
                 token.save()
 
                 base_response = BaseResponse(None, None, 'Token verified successfully.')
-                return Response(base_response.to_dict())
+                return Response(base_response.to_dict(), status=status.HTTP_200_OK)
                 return Response({'success': 'Password reset successful.'}, status=status.HTTP_200_OK)
             elif result and token.exp_date < time.time():
                 return abort(401, 'Expired  token')
@@ -275,10 +275,12 @@ class SettingsView(APIView):
             user = request.user
             print(user)
             serializer = SettingsSerializer(user)
+            
         except Exception as e:
             exception = e
         base_response = BaseResponse(data=serializer.data, exception=exception, message="User Data fetch Successful")
-        return Response(base_response.to_dict())
+        return Response(base_response.to_dict(), status=status.HTTP_200_OK)
+        
 
     def patch(self, request):
         """Update the details of a user.
@@ -303,13 +305,15 @@ class SettingsView(APIView):
             serializer.save()
             # return response(serializer.data)
             base_response = BaseResponse(data=serializer.data, exception=exception, message="User Data Updated Successfully")
-            return Response(base_response.to_dict())
+            return Response(base_response.to_dict(), status=status.HTTP_200_OK)
         except Exception as e:
             exception = e
             print(exception)
         
 
         return abort(400, serializer.errors)
+
+    
 
 class VerificationView(APIView):
     """
@@ -348,7 +352,7 @@ class VerificationView(APIView):
                     exception = e
                 
                 base_response = BaseResponse(data=userserializer.data, exception=exception, message='User successfully verified')
-                return Response(base_response.to_dict())
+                return Response(base_response.to_dict(), status=status.HTTP_200_OK)
                 
             elif result and token.exp_date < time.time():
                 return abort(401, 'Token has expired')
@@ -372,7 +376,7 @@ class LogoutView(APIView):
             token = RefreshToken(refresh_token)
             token.blacklist()
             base_response = BaseResponse(None, None, 'Successfully logged out.')
-            return Response(base_response.to_dict(), 205)
+            return Response(base_response.to_dict(), status=status.HTTP_200_OK)
         except Exception as e:
             print(type(str(e)))
             return abort(400, str(e))
@@ -410,7 +414,7 @@ class RegisterRefreshView(APIView):
                 'email': email
             }
             base_response = BaseResponse(data, None, 'Register OTP send to email')
-            return Response(base_response.to_dict())
+            return Response(base_response.to_dict(), status=status.HTTP_205_RESET_CONTENT)
         except:
             return abort(400, 'An error occured. Please Try again')
 
