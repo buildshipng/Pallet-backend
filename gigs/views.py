@@ -49,11 +49,13 @@ class GigView(APIView):
         """
         Get a particular gig
         """
-        
-        gig = Gigs.objects.get(id=gig_id)
-        serializer = self.serializer_class(gig, context={'request': request})
-        base_response = BaseResponse(serializer.data, None, 'Gig gotten successfully')
-        return Response(base_response.to_dict())
+        try:
+            gig = Gigs.objects.get(id=gig_id)
+            serializer = self.serializer_class(gig, context={'request': request})
+            base_response = BaseResponse(serializer.data, None, 'Gig gotten successfully')
+            return Response(base_response.to_dict())
+        except Exception as e:
+            return abort(400, str(e))
         
 class AllGigsView(APIView):
 
@@ -67,7 +69,7 @@ class AllGigsView(APIView):
         Get all gigs close to you if any. If there's no gig in your location it'll get all gigs generally
         """
         user = request.user
-
+        
         if Gigs.objects.filter(gig_location=user.location).count() > 0:
             gig = Gigs.objects.filter(gig_location=user.location)
                 
