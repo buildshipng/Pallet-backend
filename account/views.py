@@ -294,6 +294,7 @@ class SettingsView(APIView):
         
         exception = None
         user = request.user
+        print(request.data)
         serializer = SettingsSerializer(user, data=request.data)
         try:
             #avatar_file = request.FILES.get('avatar')

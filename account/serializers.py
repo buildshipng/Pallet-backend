@@ -58,6 +58,7 @@ class SettingsSerializer(serializers.ModelSerializer):
     portfolio = PortfolioSerializer(many=True, read_only=True)
     business = BusinessSerializer(read_only = True)
     avatar_url = serializers.ReadOnlyField()
+    avatar = serializers.ImageField(required=False)
 
     class Meta:
         model = User

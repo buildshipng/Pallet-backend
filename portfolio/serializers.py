@@ -4,7 +4,9 @@ from .models import Portfolio, Business
 
 class PortfolioSerializer(serializers.ModelSerializer):
     service_provider = serializers.PrimaryKeyRelatedField(default=serializers.CurrentUserDefault(), queryset=User.objects.all())
-    serviceImage_url = serializers.ReadOnlyField()
+    #serviceImage_url = serializers.ReadOnlyField()
+    service_image = serializers.ImageField(required=False)
+
 
     class Meta:
         model = Portfolio
