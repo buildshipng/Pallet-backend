@@ -57,13 +57,13 @@ class RegisterView(generics.CreateAPIView):
             new_token.save()
 
             print(token)
-            # send_mail(
-            #     "Test",
-            #     "This is a test message with token: \n" + token,
-            #     "buildshipng@gmail.com",
-            #     [user.email],
-            #     fail_silently=False,
-            # )
+            send_mail(
+                "Test",
+                "This is a test message with token: \n" + token,
+                "fikayosd@gmail.com",
+                [user.email],
+                fail_silently=False,
+            )
             # Customize the response data
             response_data = {
                 'full_name': user.full_name,
@@ -74,7 +74,7 @@ class RegisterView(generics.CreateAPIView):
             base_response = BaseResponse(data=response_data, exception=exception, message="User Created Successful")
             return Response(base_response.to_dict())
         except Exception as e:
-            return abort(400, "User registration failed")
+            return abort(400, "User registration failed"+ str(e))
 
             
         return Response(response_data, status=status.HTTP_201_CREATED)
