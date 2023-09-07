@@ -1,9 +1,17 @@
 from django.db import models
-
+import uuid
+from django.utils import timezone
 from cloudinary.models import CloudinaryField
 
-# Create your models here.
-class Gigs(models.Model):
+# Create your models here.]
+class BaseModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    modified_at = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+class Gigs(BaseModel):
     service_provider = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='gigs')
     gig_name = models.CharField(max_length=100)
     gig_description = models.CharField(max_length=1000, null=True)
@@ -30,3 +38,9 @@ class Reviews(models.Model):
     reviewer = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='reviewer')
     date_created = models.DateField(auto_now=True)
     rev_details = models.CharField(max_length=600, null=True, blank=True)
+
+class Bookings(BaseModel):
+    gig = models.ForeignKey(Gigs, on_delete=models.CASCADE, related_name='booked_gigs')
+    # booker = models.ForeignKey('account.user', on_delete=models.DO_NOTHING)
+    user = models.ForeignKey('account.user', on_delete=models.CASCADE)
+    status = models.BooleanField(default=True)

@@ -4,6 +4,8 @@ from datetime import datetime
 from django.contrib.auth.hashers import make_password
 from cloudinary.models import CloudinaryField
 from gigs.models import Gigs
+import uuid
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -47,6 +49,7 @@ class User(AbstractUser):
     """
     The model class responsible for handling users
     """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_name = None
     last_name = None
     username = None

@@ -1,9 +1,9 @@
 from django.db import models
 from account.models import User
 from cloudinary.models import CloudinaryField
-
+from gigs.models import BaseModel
 # Create your models here.
-class Portfolio(models.Model):
+class Portfolio(BaseModel):
     service_provider = models.ForeignKey(User, on_delete=models.CASCADE, related_name='portfolio')
     service_title = models.CharField(max_length=100)
     service_overview = models.CharField(max_length=1000, null=True)

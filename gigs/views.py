@@ -56,6 +56,8 @@ class GigView(APIView):
             return Response(base_response.to_dict())
         except Exception as e:
             return abort(400, str(e))
+
+    #TODO: add a patch endpoint for editing a gig
         
 class AllGigsView(APIView):
 
@@ -80,3 +82,10 @@ class AllGigsView(APIView):
         serializer = self.serializer_class(gig, context={'request': request}, many=True)
         base_response = BaseResponse(serializer.data, None, 'Gig gotten successfully')
         return Response(base_response.to_dict())
+
+# class BookGig(APIView):
+#     permission_classes = (IsAuthenticated,)
+
+
+#     def post(self, request):
+        

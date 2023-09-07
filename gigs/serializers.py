@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from account.models import User
-from .models import Gigs
+from .models import Gigs, Bookings
 
 
 class GigSerializer(serializers.ModelSerializer):
@@ -10,4 +10,7 @@ class GigSerializer(serializers.ModelSerializer):
         model = Gigs
         fields = '__all__'
 
-    
+class BookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bookings
+        fields = '__all__'
