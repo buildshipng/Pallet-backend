@@ -2,9 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
-from .serializers import GigSerializer
+from rest_framework import status
+from .serializers import GigSerializer, BookingSerializer, ClosingSerializer
 from account.utils import BaseResponse, abort
-from gigs.models import Gigs
+from gigs.models import Gigs, Bookings, Reviews
 
 from django.http import QueryDict
 # Create your views here.
@@ -17,6 +18,7 @@ class GigView(APIView):
     parser_classes = [MultiPartParser]
     serializer_class = GigSerializer
     
+    #TODO: fix up the cloudinary issues
 
     def post(self, request):
         """
@@ -83,9 +85,92 @@ class AllGigsView(APIView):
         base_response = BaseResponse(serializer.data, None, 'Gig gotten successfully')
         return Response(base_response.to_dict())
 
-# class BookGig(APIView):
-#     permission_classes = (IsAuthenticated,)
+class BookGig(APIView):
+    permission_classes = (IsAuthenticated,)
+    #permission_classes = []
+    
+
+    def post(self, request):
+        """Endpoint to book a gig. It takes in the gig_id"""
+        serializer = BookingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
 
-#     def post(self, request):
+        gig_id = serializer.validated_data['gig_id']
+
+        try:
+            gig = Gigs.objects.get(id=gig_id)
+            print("hi")
+        except Exception as e:
+            print(str(e))
+            abort(404, 'Gig does not exist')
         
+        # restrict a user from booking their gig
+        if gig.service_provider == request.user:
+            return abort(403, "You cannot book your own gig")
+        
+        # create a booking
+        gigBook = Bookings()
+        gigBook.gig = gig
+        gigBook.user = request.user
+        gigBook.status = True
+        gigBook.save()
+
+        data = {
+            "booking_id" : gigBook.id,
+            "status": True
+
+        }
+
+        base_response = BaseResponse(data, None, 'Gig booked successfully')
+        return Response(base_response.to_dict(), status=status.HTTP_201_CREATED)
+
+
+#TODO: add the permissions for the two endpoints 
+class CloseGig(APIView):
+    permission_classes = (IsAuthenticated,)
+
+
+    def post(self, request):
+        """Endpoint to review and close a gig"""
+
+        serializer = ClosingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        booking_id = serializer.validated_data['booking_id']
+        review_chioce = serializer.validated_data['review_choice']
+        rating = serializer.validated_data['rating']
+        review_experience = serializer.validated_data['review_experience']
+
+        try:
+            booking = Bookings.objects.get(id=booking_id)
+        except:
+            return abort(404, "booking does not exist")
+        booking.status = False
+        booking.save()
+
+            
+        review = Reviews()
+        review.gig = booking.gig
+        review.reviewer = request.user
+        review.rating = rating
+        review.review_details = review_experience
+        if review_chioce == "service_completed":
+            review.review_choice = Reviews.CLOSE_GIG_CHOICE.SERVICE_COMPLETED
+        elif review_chioce == "mind_change":
+            review.review_choice = Reviews.CLOSE_GIG_CHOICE.MIND_CHANGE
+        elif review_chioce == "service_provider_unavailable":
+            review.review_choice = Reviews.CLOSE_GIG_CHOICE.SERVICE_PROVIDER_UNAVAILABLE
+        else:
+            return abort(404, "review choice not valid")
+        
+        review.save()
+
+        data = {
+            "booking_id": booking_id,
+        }
+        base_response = BaseResponse(data, None, 'Gig closed successfully')
+        return Response(base_response.to_dict(), status=status.HTTP_201_CREATED)
+
+
+   

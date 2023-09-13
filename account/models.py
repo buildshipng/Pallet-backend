@@ -61,7 +61,6 @@ class User(AbstractUser):
     avatar = CloudinaryField("avatar")
     fav_gigs = models.ManyToManyField(Gigs, related_name="fav_gig", blank=True)
     fav_service = models.ManyToManyField('self', related_name="fav_sp", blank=True)
-    # portfolio = models.ManyToManyField('portfolio', related_name="portfolio")
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

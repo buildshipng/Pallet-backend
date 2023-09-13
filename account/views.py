@@ -1,36 +1,32 @@
-from django.shortcuts import render
-
-# Create your views here.
 from rest_framework import generics
 from rest_framework.views import APIView
-from .serializers import *
-from .utils import response, abort, TokenGenerator, BaseResponse
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.parsers import MultiPartParser
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import serializers, status
+
 from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from rest_framework import serializers, status
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.hashers import check_password
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken, OutstandingToken
-from rest_framework_simplejwt.exceptions import AuthenticationFailed
-from rest_framework.permissions import AllowAny
 from django.conf import settings
-from .models import Tokens
-import time
 from django.db.models import Q
 from django.core.mail import send_mail
-from rest_framework.parsers import MultiPartParser
+
+import time
+from .models import Tokens
+from .serializers import *
+from .utils import response, abort, BaseResponse
 
 
 
 User = get_user_model()
-toke = TokenGenerator()
-passtoke = TokenGenerator()
+
 
 class RegisterView(generics.CreateAPIView):
     """View for handling user registration.
