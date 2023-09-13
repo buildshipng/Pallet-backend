@@ -34,13 +34,24 @@ class Gigs(BaseModel):
         return self.gig_name
 
 class Reviews(models.Model):
-    user = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='reviews')
+
+    class CLOSE_GIG_CHOICE(models.TextChoices):
+        SERVICE_COMPLETED = 'service_completed', 'Service Completed'
+        MIND_CHANGE = 'mind_change', 'Mind Change'
+        SERVICE_PROVIDER_UNAVAILABLE = 'service_provider_unavailable', 'SERVICE PROVIDER UNAVAILABLE'
+    # user = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='reviews')
+    gig = models.ForeignKey(Gigs, on_delete=models.CASCADE, related_name='booked_gig')
+
     reviewer = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='reviewer')
-    date_created = models.DateField(auto_now=True)
-    rev_details = models.CharField(max_length=600, null=True, blank=True)
+    date_created = models.DateTimeField(auto_now=True)
+    rating = models.FloatField(default=0, blank=True)
+    review_choice = models.CharField(max_length=255, choices=CLOSE_GIG_CHOICE.choices, blank=True)
+    review_details = models.CharField(max_length=1000, null=True, blank=True)
 
 class Bookings(BaseModel):
     gig = models.ForeignKey(Gigs, on_delete=models.CASCADE, related_name='booked_gigs')
     # booker = models.ForeignKey('account.user', on_delete=models.DO_NOTHING)
+    #user booking the gig
     user = models.ForeignKey('account.user', on_delete=models.CASCADE)
-    status = models.BooleanField(default=True)
+    # status of the booking. Closed = 0 Open = 1
+    status = models.BooleanField(default=False)
