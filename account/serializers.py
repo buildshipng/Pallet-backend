@@ -78,6 +78,7 @@ class SettingsSerializer(serializers.ModelSerializer):
         # }
 
     def to_representation(self, instance):
+        """Documentation needed"""
         representation = super().to_representation(instance)
         representation.pop("avatar")
 

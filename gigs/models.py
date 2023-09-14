@@ -36,6 +36,7 @@ class Gigs(BaseModel):
 class Reviews(models.Model):
 
     class CLOSE_GIG_CHOICE(models.TextChoices):
+        """Documentation needed"""
         SERVICE_COMPLETED = 'service_completed', 'Service Completed'
         MIND_CHANGE = 'mind_change', 'Mind Change'
         SERVICE_PROVIDER_UNAVAILABLE = 'service_provider_unavailable', 'SERVICE PROVIDER UNAVAILABLE'
