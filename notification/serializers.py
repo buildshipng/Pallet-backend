@@ -7,8 +7,8 @@ from django.utils.timesince import timesince, timeuntil
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    notification_count = serializers.SerializerMethodField(many=True, read_only=True)
-    notifications = serializers.SerializerMethodField(many=True, read_only=True)
+    notification_count = serializers.SerializerMethodField(read_only=True)
+    notifications = serializers.SerializerMethodField(read_only=True)
     notification_time_display = serializers.SerializerMethodField(read_only=True)
     
     class Meta:

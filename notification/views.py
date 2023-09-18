@@ -12,6 +12,10 @@ from .serializers import *
 # Create your views here.
 
 class ViewNotification(ListAPIView):
+    """
+    Return the total unread notifications and 
+        all notifications to the authorize user
+    """
     permission_classes = (IsAuthenticated)
     parser_classes = (MultiPartParser)
     queryset = Notifications.objects.all()
