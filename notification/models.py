@@ -1,16 +1,20 @@
 from django.db import models
 from uuid import uuid4
-from gigs.models import Bookings, Reviews
-
 
 # Create your models here.
 class Notifications(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    user_id = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name="user")
-    booking_id = models.ForeignKey(Bookings, on_delete=models.CASCADE, related_name="client")
-    review_id = models.ForeignKey(Reviews, on_delete=models.CASCADE, related_name="client_review")
-    time_created = models.DateTimeField()
-    message = models.CharField(max_length=100, blank=True)
+    """
+    Notification model for service providers only.
+        To be reviewed overtime
+    """
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid4)
+    client = models.ForeignKey('account.user', on_delete=models.CASCADE, related_name="user", blank=False)
+    
+    # booking = models.ForeignKey('gigs.bookings', on_delete=models.CASCADE, related_name="client", blank=True,null=True)
+    review = models.ForeignKey('gigs.reviews', on_delete=models.CASCADE,  related_name='client', blank=True, null=True)
+    message = models.CharField(max_length=200, blank=False, null=False)
+    notication_time = models.DateTimeField(auto_now=True)
+    is_read = models.BooleanField(default=False)
     
     def __str__(self) -> str:
         return self.message

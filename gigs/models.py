@@ -1,4 +1,5 @@
 from django.db import models
+from notification.models import Notifications
 import uuid
 from django.utils import timezone
 from cloudinary.models import CloudinaryField
@@ -48,6 +49,20 @@ class Reviews(models.Model):
     rating = models.FloatField(default=0, blank=True)
     review_choice = models.CharField(max_length=255, choices=CLOSE_GIG_CHOICE.choices, blank=True)
     review_details = models.CharField(max_length=1000, null=True, blank=True)
+    
+    def save(self, *args, **kwargs):
+        """Creating notfication for the gig's service provider"""
+        super(Reviews, self).save(args, **kwargs)
+        
+        if self.review_choice == Reviews.CLOSE_GIG_CHOICE.SERVICE_COMPLETED:
+            message = f'New review for your gig {self.gig.gig_name}'
+        elif self.review_choice == Reviews.CLOSE_GIG_CHOICE.MIND_CHANGE:
+            message = f'New review for your gig {self.gig.gig_name}'
+        elif self.review_choice == Reviews.CLOSE_GIG_CHOICE.SERVICE_PROVIDER_UNAVAILABLE:
+            message = f'New review for your gig {self.gig.gig_name}'
+        else:
+            Notifications.objects.create(client=self.reviewer, review=self.id, message=message)
+
 
 class Bookings(BaseModel):
     gig = models.ForeignKey(Gigs, on_delete=models.CASCADE, related_name='booked_gigs')
