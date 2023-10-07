@@ -62,23 +62,15 @@ class RegisterView(generics.CreateAPIView):
                     template_name="user_invite.html",
                     context={"user": user.id, "token":token}
                 )
-                
 
             except Exception as error:
                 print(error)
-            response_data = {
-                'full_name': user.full_name,
-                'email': user.email,
-                'token': token
-                # Add any other fields you want to include in the response
-            }
-            base_response = BaseResponse(data=response_data, exception=exception, message="User Created Successful")
+            
+            base_response = BaseResponse(serializer.data, exception=exception, message="User Created Successful")
             return Response(base_response.to_dict())
         except Exception as e:
             return abort(400, "User registration failed" + str(e))
 
-            
-        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class LoginView(TokenObtainPairView):
@@ -124,8 +116,7 @@ class LoginView(TokenObtainPairView):
             return Response(response.data, status=status.HTTP_200_OK)
         except AuthenticationFailed as e:
             return abort(401, (e.detail)['detail'])
-            # return Response({'error': e.detail}, status=status.HTTP_401_UNAUTHORIZED)
-        # return Response(serializer.validated_data, status=status.HTTP_200_OK)
+
 
 class PasswordResetRequestView(APIView):
     """
@@ -149,20 +140,26 @@ class PasswordResetRequestView(APIView):
             new_token.token = token
             new_token.exp_date = time.time() + 300
             new_token.save()
+            try:
+                """Send otp to sign up user"""
+                EmailManager.send_mail(
+                    subject=f"Palette - Reset Password",
+                    recipients=[new_token.email],
+                    template_name="user_reset_password.html",
+                    context={"user": user.id, "token":token}
+                )
 
+            except Exception as error:
+                print(error)
             
             data = {
                 'Token': token
             }
-            base_response = BaseResponse(data, None, 'Reset OTP send to email')
+            base_response = BaseResponse(None, None, 'Reset OTP sent to email')
             return Response(base_response.to_dict(), status=status.HTTP_201_CREATED)
-            return Response({'Token': token, 'message': "success"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
-            # return Response({'error': 'An account with this email does not exist.'}, status=status.HTTP_404_NOT_FOUND)
             return abort(404, 'An account with this email does not exist.')
-        # token = RefreshToken.for_user(user).access_token
-        # send_password_reset_email(email, token)
-        # return Response({'success': 'An email with a reset link has been sent to your address.'}, status=status.HTTP_200_OK)
+        
 
 class PasswordResetConfirmView(APIView):
     """
