@@ -22,6 +22,7 @@ import time
 from .models import Tokens
 from .serializers import *
 from .utils import response, abort, BaseResponse
+from utils.email import EmailManager
 
 
 
@@ -53,14 +54,18 @@ class RegisterView(generics.CreateAPIView):
             new_token.save()
 
             print(token)
-            # send_mail(
-            #     "Test",
-            #     "This is a test message with token: \n" + token,
-            #     "buildshipng@gmail.com",
-            #     [user.email],
-            #     fail_silently=False,
-            # )
-            # Customize the response data
+            try:
+                """Send otp to sign up user"""
+                EmailManager.send_mail(
+                    subject=f"Palette - Verify you email",
+                    recipients=[new_token.email],
+                    template_name="user_invite.html",
+                    context={"user": user.id, "token":token}
+                )
+                
+
+            except Exception as error:
+                print(error)
             response_data = {
                 'full_name': user.full_name,
                 'email': user.email,
