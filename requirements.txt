@@ -21,6 +21,7 @@ django-otp==1.2.2
 djangorestframework==3.13.1
 djangorestframework-jwt==1.11.0
 djangorestframework-simplejwt==5.2.2
+drf-yasg==1.21.7
 env==0.1.0
 filelock==3.7.1
 Flask==2.2.3
